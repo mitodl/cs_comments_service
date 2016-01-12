@@ -177,13 +177,8 @@ describe 'app' do
       subject { Elasticsearch::Model.client }
 
       it 'has a host value set to that from application.yaml' do
-        uri = URI::parse(CommentService.config[:elasticsearch_server])
-        expected = {
-            protocol: uri.scheme,
-            host: uri.host,
-            port: uri.port,
-        }
-        expect(subject.transport.hosts[0]).to eq expected
+        expected = URI::parse(CommentService.config[:elasticsearch_server])
+        expect(URI::HTTP.build(subject.transport.hosts[0])).to eq expected
       end
     end
   end
