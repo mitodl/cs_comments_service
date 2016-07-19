@@ -19,9 +19,17 @@ get "#{APIPREFIX}/users/:user_id/subscribed_threads" do |user_id|
 end
 
 post "#{APIPREFIX}/users/:user_id/subscriptions" do |user_id|
-  user.subscribe(source).to_hash.to_json
+  user.subscribe(source)
+
+  # Mark thread/comment as read for requesting user on subscription
+  user.mark_as_read(source)
+  user.reload.to_hash.to_json
 end
 
 delete "#{APIPREFIX}/users/:user_id/subscriptions" do |user_id|
-  user.unsubscribe(source).to_hash.to_json
+  user.unsubscribe(source)
+
+  # Mark thread/comment as read for requesting user on unsubscription
+  user.mark_as_read(source)
+  user.reload.to_hash.to_json
 end

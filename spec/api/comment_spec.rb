@@ -109,12 +109,23 @@ describe 'Comment API' do
       test_update_endorsed('True', 'False')
     end
 
-    it 'updates body correctly' do
+    it 'updates body correctly and does not mark thread as read for user' do
       comment = thread.comments.first
       put "/api/v1/comments/#{comment.id}", body: 'new body'
       last_response.should be_ok
       comment.reload
       comment.body.should == 'new body'
+    end
+
+    it 'updates body correctly and marks thread as read for user' do
+      comment = thread.comments.first
+      user = create_test_user(42)
+      put "/api/v1/comments/#{comment.id}", body: 'new body', user_id: user._id
+      last_response.should be_ok
+      comment.reload
+      comment.body.should == 'new body'
+
+      test_thread_marked_as_read(user.reload, thread.reload)
     end
 
     it 'can update endorsed and body simultaneously' do
@@ -155,7 +166,7 @@ describe 'Comment API' do
   end
 
   describe 'POST /api/v1/comments/:comment_id' do
-    it 'creates a sub comment to the comment' do
+    it 'creates a sub comment to the comment and marks thread as read for user' do
       comment = thread.comments.first
       previous_child_count = comment.children.length
       user = thread.author
@@ -172,6 +183,8 @@ describe 'Comment API' do
       sub_comment.course_id.should == course_id
       sub_comment.author.should == user
       sub_comment.child_count.should == 0
+
+      test_thread_marked_as_read(user.reload, thread.reload)
     end
 
     it 'returns 400 when the comment does not exist' do

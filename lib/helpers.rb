@@ -54,7 +54,6 @@ helpers do
     raise ArgumentError, t(:user_id_is_required) unless user
     obj.abuse_flaggers << user.id unless obj.abuse_flaggers.include? user.id
     obj.save
-    obj.reload.to_hash.to_json
   end
   
   def un_flag_as_abuse(obj)
@@ -66,9 +65,8 @@ helpers do
     else
       obj.abuse_flaggers.delete user.id
     end
-    
+
     obj.save
-    obj.reload.to_hash.to_json
   end
 
   def undo_vote_for(obj)
@@ -76,7 +74,6 @@ helpers do
     if user.voted?(obj)
       user.unvote(obj)
     end
-    obj.reload.to_hash.to_json
   end
   
 

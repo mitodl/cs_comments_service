@@ -113,17 +113,19 @@ describe "app" do
     end
 
     describe "POST /api/v1/users/:user_id/subscriptions" do
-      it "subscribe a comment thread" do
+      it "subscribe a comment thread and marks it as read for user" do
         thread = @threads["t0"]
         post "/api/v1/users/#{subscriber.external_id}/subscriptions", source_type: "thread", source_id: thread.id
         last_response.should be_ok
         thread.subscribers.length.should == 1
         thread.subscribers[0].should == subscriber
+
+        test_thread_marked_as_read(subscriber.reload, thread.reload)
       end
     end
 
     describe "DELETE /api/v1/users/:user_id/subscriptions" do
-      it "unsubscribe a comment thread" do
+      it "unsubscribe a comment thread and marks it as read for user" do
         thread = @threads["t2"]
         subscriber.subscribe(thread)
         thread.subscribers.length.should == 1
@@ -131,6 +133,8 @@ describe "app" do
         delete "/api/v1/users/#{subscriber.external_id}/subscriptions", source_type: "thread", source_id: thread.id
         last_response.should be_ok
         thread.subscribers.length.should == 0
+
+        test_thread_marked_as_read(subscriber.reload, thread.reload)
       end
     end
 

@@ -23,6 +23,15 @@ put "#{APIPREFIX}/comments/:comment_id" do |comment_id|
   if comment.errors.any?
     error 400, comment.errors.full_messages.to_json
   else
+    # Temporary check for user_id in params to make sure web app does not crash if user_id is not
+    # passed on update.
+    # TODO: Remove this check once web call is updated to pass 'user_id' too for TNL-4995.
+    # For reference; see discussion at MA-2139.
+    if params[:user_id]
+      # Mark thread as read for requesting user on update response/comment
+      user.mark_as_read(comment.comment_thread)
+    end
+
     comment.to_hash.to_json
   end
 end
@@ -44,6 +53,8 @@ post "#{APIPREFIX}/comments/:comment_id" do |comment_id|
       error 400, comment.errors.full_messages.to_json
     else
       user.subscribe(comment.comment_thread) if bool_auto_subscribe
+      # Mark thread as read for owner user on response creation
+      user.mark_as_read(comment.comment_thread)
       sub_comment.to_hash.to_json
     end
   end

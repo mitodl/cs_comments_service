@@ -614,7 +614,7 @@ describe "app" do
 
       before(:each) { init_without_subscriptions }
 
-      it "updates information of comment thread" do
+      it "updates information of comment thread and does not mark it read for user" do
         thread = CommentThread.first
         comment = thread.comments.first
         comment.endorsed = true
@@ -631,6 +631,26 @@ describe "app" do
         comment.endorsed.should == false
         comment.endorsement.should == nil
         check_unread_thread_result_json(changed_thread, parse(last_response.body))
+      end
+      it "updates information of comment thread and marks it read for user" do
+        thread = CommentThread.first
+        comment = thread.comments.first
+        comment.endorsed = true
+        comment.endorsement = {:user_id => "42", :time => DateTime.now}
+        comment.save
+        user = create_test_user(42)
+        put "/api/v1/threads/#{thread.id}", body: "new body", title: "new title", commentable_id: "new_commentable_id", thread_type: "question", user_id: user._id
+        last_response.should be_ok
+        changed_thread = CommentThread.find(thread.id)
+        changed_thread.body.should == "new body"
+        changed_thread.title.should == "new title"
+        changed_thread.commentable_id.should == "new_commentable_id"
+        changed_thread.thread_type.should == "question"
+        comment.reload
+        comment.endorsed.should == false
+        comment.endorsement.should == nil
+        user.reload
+        check_thread_result_json(user, changed_thread, parse(last_response.body))
       end
       it "returns 400 when the thread does not exist" do
         put "/api/v1/threads/does_not_exist", body: "new body", title: "new title"
@@ -668,7 +688,7 @@ describe "app" do
       let :default_params do
         {body: "new comment", course_id: "1", user_id: User.first.id}
       end
-      it "create a comment to the comment thread" do
+      it "create a comment to the comment thread and marks thread as read for user" do
         thread = CommentThread.first
         user = User.first
         orig_count = thread.comment_count
@@ -681,6 +701,8 @@ describe "app" do
         comment.should_not be_nil
         comment.author_id.should == user.id
         retrieved["child_count"].should == 0
+
+        test_thread_marked_as_read(user.reload, thread.reload)
       end
       it "allows anonymous comment" do
         thread = CommentThread.first

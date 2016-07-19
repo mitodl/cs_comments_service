@@ -60,7 +60,18 @@ put "#{APIPREFIX}/threads/:thread_id" do |thread_id|
   if thread.errors.any?
     error 400, thread.errors.full_messages.to_json
   else
-    presenter = ThreadPresenter.factory(thread, nil)
+    # Temporary check for user_id in params to make sure web app does not crash if user_id is not
+    # passed on update.
+    # TODO: Remove this check once web call is updated to pass 'user_id' too for TNL-4995.
+    # For reference; see discussion at MA-2139.
+    if params[:user_id]
+      # Mark thread as read for requesting user on update
+      user.mark_as_read(thread)
+      presenter = ThreadPresenter.factory(thread, user)
+    else
+      presenter = ThreadPresenter.factory(thread, nil)
+    end
+
     presenter.to_hash.to_json
   end
 end
@@ -78,6 +89,8 @@ post "#{APIPREFIX}/threads/:thread_id/comments" do |thread_id|
     error 400, comment.errors.full_messages.to_json
   else
     user.subscribe(thread) if bool_auto_subscribe
+    # Mark thread as read for owner user on comment creation
+    user.mark_as_read(thread)
     comment.to_hash.to_json
   end
 end

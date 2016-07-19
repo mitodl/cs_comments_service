@@ -9,7 +9,7 @@ describe "app" do
     end
 
     describe "PUT /api/v1/comments/:comment_id/votes" do
-      it "create or update the vote on the comment" do
+      it "create or update the vote on the comment and marks it as read for user" do
         user = User.first
         comment = Comment.first
         prev_up_votes = comment.up_votes_count
@@ -18,6 +18,8 @@ describe "app" do
         comment = Comment.find(comment.id)
         comment.up_votes_count.should == prev_up_votes - 1
         comment.down_votes_count.should == prev_down_votes + 1
+
+        test_thread_marked_as_read(user.reload, comment.comment_thread)
       end
       it "returns 400 when the comment does not exist" do
         put "/api/v1/comments/does_not_exist/votes", user_id: User.first.id, value: "down"
@@ -39,7 +41,7 @@ describe "app" do
       end
     end
     describe "DELETE /api/v1/comments/:comment_id/votes" do
-      it "unvote on the comment" do
+      it "unvote on the comment and marks it as read for user" do
         user = User.first
         comment = Comment.first
         prev_up_votes = comment.up_votes_count
@@ -48,6 +50,8 @@ describe "app" do
         comment = Comment.find(comment.id)
         comment.up_votes_count.should == prev_up_votes - 1
         comment.down_votes_count.should == prev_down_votes
+
+        test_thread_marked_as_read(user.reload, comment.comment_thread)
       end
       it "unvote on the comment is idempotent" do
         user = User.first
@@ -73,7 +77,7 @@ describe "app" do
       end
     end
     describe "PUT /api/v1/threads/:thread_id/votes" do
-      it "create or update the vote on the thread" do
+      it "create or update the vote on the thread and marks it as read for user" do
         user = User.first
         thread = CommentThread.first
         prev_up_votes = thread.up_votes_count
@@ -82,6 +86,8 @@ describe "app" do
         thread = CommentThread.find(thread.id)
         thread.up_votes_count.should == prev_up_votes - 1
         thread.down_votes_count.should == prev_down_votes + 1
+
+        test_thread_marked_as_read(user.reload, thread)
       end
       it "vote on the thread is idempotent" do
         user = User.first
@@ -114,7 +120,7 @@ describe "app" do
       end
     end
     describe "DELETE /api/v1/threads/:thread_id/votes" do
-      it "unvote on the thread" do
+      it "unvote on the thread and marks it as read for user" do
         user = User.first
         thread = CommentThread.first
         prev_up_votes = thread.up_votes_count
@@ -123,6 +129,8 @@ describe "app" do
         thread = CommentThread.find(thread.id)
         thread.up_votes_count.should == prev_up_votes - 1
         thread.down_votes_count.should == prev_down_votes
+
+        test_thread_marked_as_read(user.reload, thread)
       end
       it "returns 400 when the comment does not exist" do
         delete "/api/v1/threads/does_not_exist/votes", user_id: User.first.id
